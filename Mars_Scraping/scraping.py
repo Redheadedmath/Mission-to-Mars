@@ -8,9 +8,10 @@ import datetime as dt
 
 def scrape_all():
     #Initialize headless driver for deployment
-    browser = Browser('chrome', executable_path={'executable_path': '/Users/redheadedmath/.wdm/drivers/chromedriver/mac64/86.0.4240.22/chromedriver'}, headless=True)
-    
+    browser = Browser('chrome', executable_path='/Users/redheadedmath/.wdm/drivers/chromedriver/mac64/86.0.4240.22/chromedriver', headless=True)
+
     news_title, news_paragraph = mars_news(browser)
+    hemispheres = high_res_dict(browser)
 
     # Run all scraping functions and store results in dictionary
     data = {
@@ -18,7 +19,8 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
-        "last_modified": dt.datetime.now()
+        "last_modified": dt.datetime.now(),
+        "hemispheres": hemispheres
     }
     #Stop webdriver and return data
     browser.quit()
@@ -60,7 +62,7 @@ def featured_image(browser):
     url = 'https://www.jpl.nasa.gov/spaceimages/?search=&category=Mars'
     browser.visit(url)
     # Find and click the full image button
-    full_image_elem = browser.find_by_id('full_image')
+    full_image_elem = browser.find_by_id('full_image')[0]
     full_image_elem.click()
     # Find the more info button and click that
     browser.is_element_present_by_text('more info', wait_time=1)
@@ -74,7 +76,7 @@ def featured_image(browser):
     try:
         # Find the relative image url
         img_url_rel = img_soup.select_one('figure.lede a img').get("src")
-    except:
+    except AttributeError:
         return None
     # Use the base URL to create an absolute URL
     img_url = f'https://www.jpl.nasa.gov{img_url_rel}'
@@ -88,11 +90,34 @@ def mars_facts():
     except BaseException:
         return None
     # Assign Columns and set index of dataframe
-    df.columns=['description','value']
-    df.set_index('description', inplace=True)
+    df.columns=['Description','Mars']
+    df.set_index('Description', inplace=True)
 
     # Return to html format, add bootstrap
     return df.to_html(classes="table table-striped")
+
+def high_res_dict(browser):
+    #establish target URL
+    url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars' 
+    #create repository list for dictionaries
+    hemisphere_image_urls = []
+    #iterable list of known headers
+    click_urls = ["Cerberus Hemisphere Enhanced", "Schiaparelli Hemisphere Enhanced",
+             "Syrtis Major Hemisphere Enhanced", "Valles Marineris Hemisphere Enhanced"]
+    # not pretty, but it gets the job done. 
+    for item in click_urls:
+        browser.visit(url)
+        thumbnail = browser.find_by_text(item)
+        thumbnail.click()
+        html = browser.html
+        high_res_soup = soup(html, 'html.parser')
+        img_url = high_res_soup.select_one('div.downloads ul li a').get("href")
+        title = high_res_soup.select_one('div.content section h2').get_text()
+        hemi_dict = {'img_url':img_url,
+                    'title':title}
+        hemisphere_image_urls.append(hemi_dict)
+
+    return hemisphere_image_urls
 
 if __name__ == "__main__":
     # If running as script, print scraped data
