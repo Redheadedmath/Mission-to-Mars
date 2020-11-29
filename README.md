@@ -1,1 +1,3 @@
 # Mission-to-Mars
+## Project Overview ##
+This project sought to combine elements of python flask app design, mongo database management, and html scripting in order to compile various scraped pieces of information from related, different sources into a single, elegant interface. Hosted locally through Flask, and formatted with Bootstrap html coding, several different pieces of information regarding Mars are neatly displayed in a single location for the author. With the click of a button, the local user can update their display with the most current NASA article snippet and image regarding the Red planet.
